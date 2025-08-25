@@ -84,3 +84,62 @@ resource "aws_route_table_association" "public_a" {
 
 
 
+# --- Security Group: allow HTTP/HTTPS in, all out
+resource "aws_security_group" "web_sg" {
+  name        = "web-sg"
+  description = "Allow HTTP/HTTPS"
+  vpc_id      = aws_vpc.main.id
+
+  ingress {
+    description = "HTTP"
+    from_port   = 80
+    to_port     = 80
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  ingress {
+    description = "HTTPS"
+    from_port   = 443
+    to_port     = 443
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  egress {
+    description = "all egress"
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  tags = merge(local.common_tags, { Name = "web-sg" })
+}
+
+# --- AMI lookup: Ubuntu 22.04 LTS (Canonical) in your region
+data "aws_ami" "ubuntu_2204" {
+  most_recent = true
+  owners      = ["099720109477"] # Canonical
+
+  filter {
+    name   = "name"
+    values = ["ubuntu/images/hvm-ssd/ubuntu-jammy-22.04-amd64-server-*"]
+  }
+
+  filter {
+    name   = "virtualization-type"
+    values = ["hvm"]
+  }
+}
+
+# --- EC2 (Ubuntu) in the PUBLIC subnet
+resource "aws_instance" "web_ubuntu" {
+  ami                         = data.aws_ami.ubuntu_2204.id
+  instance_type               = "t2.micro"
+  subnet_id                   = aws_subnet.public_a.id
+  vpc_security_group_ids      = [aws_security_group.web_sg.id]
+  associate_public_ip_address = true  # subnet also auto-assigns
+
+  tags = merge(local.common_tags, { Name = "web-ubuntu" })
+}

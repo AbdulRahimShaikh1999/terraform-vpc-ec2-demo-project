@@ -40,3 +40,47 @@ resource "aws_subnet" "private_b" {
     Tier = "private"
   })
 }
+
+
+
+######################
+
+# --- Internet Gateway (attach to the VPC)
+resource "aws_internet_gateway" "igw" {
+  vpc_id = aws_vpc.main.id
+
+  tags = merge(local.common_tags, { Name = "main-igw" })
+}
+
+# --- Public Route Table (default route to the IGW)
+resource "aws_route_table" "public" {
+  vpc_id = aws_vpc.main.id
+
+  tags = merge(local.common_tags, { Name = "rtb-public" })
+}
+
+# Route: all IPv4 traffic -> IGW
+resource "aws_route" "public_inet_v4" {
+  route_table_id         = aws_route_table.public.id
+  destination_cidr_block = "0.0.0.0/0"
+  gateway_id             = aws_internet_gateway.igw.id
+}
+
+# (Optional) IPv6 default route if your VPC has IPv6
+# resource "aws_route" "public_inet_v6" {
+#   route_table_id              = aws_route_table.public.id
+#   destination_ipv6_cidr_block = "::/0"
+#   gateway_id                  = aws_internet_gateway.igw.id
+# }
+
+# --- Associate public route table with the PUBLIC subnet
+resource "aws_route_table_association" "public_a" {
+  subnet_id      = aws_subnet.public_a.id
+  route_table_id = aws_route_table.public.id
+}
+
+
+#######################
+
+
+

@@ -2,11 +2,16 @@ provider "aws" {
   region = "us-east-1"
 }
 
+
+
 locals {
   common_tags = {
-    Project = "vpc-ec2-nginx", Owner   = "you"
+    Project   = "vpc-ec2-nginx"
+    Owner     = "you"
+    ManagedBy = "Terraform"
   }
 }
+
 
 resource "aws_vpc" "main" {
   cidr_block           = "10.16.0.0/16"

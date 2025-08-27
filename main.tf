@@ -12,6 +12,13 @@ locals {
   }
 }
 
+# Bitnami NGINX AMI (set this to the AMI ID for *eu-west-1*)
+variable "nginx_ami_id" {
+  description = "Bitnami NGINX AMI ID for the target region"
+  type        = string
+}
+
+
 
 resource "aws_vpc" "main" {
   cidr_block           = "10.16.0.0/16"
@@ -19,6 +26,7 @@ resource "aws_vpc" "main" {
   enable_dns_hostnames = true
   tags                 = merge(local.common_tags, { Name = "main-vpc" })
 }
+
 
 
 ################
@@ -140,7 +148,7 @@ data "aws_ami" "ubuntu_2204" {
 
 # --- EC2 (Ubuntu) in the PUBLIC subnet
 resource "aws_instance" "web_ubuntu" {
-  ami                         = data.aws_ami.ubuntu_2204.id
+  ami                         = var.nginx_ami_id  
   instance_type               = "t2.micro"
   subnet_id                   = aws_subnet.public_a.id
   vpc_security_group_ids      = [aws_security_group.web_sg.id]
